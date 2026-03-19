@@ -1,4 +1,5 @@
 // Time to Cap Column Feature
+import { Resources } from '../core/game-data';
 
 export function initTimeToCap() {
     if (!window.MainStore) {
@@ -44,15 +45,12 @@ export function initTimeToCap() {
 
     // Get time to cap from MainStore
     function getTimeToCap(resourceId) {
-        const idx = MainStore.idxs.resources[resourceId];
-        if (idx === undefined) return null;
-
-        const resource = MainStore.run.resources[idx];
+        const resource = Resources.get(resourceId);
         if (!resource) return null;
 
-        const current = resource.value || 0;
-        const cap = MainStore.ResourcesStore.getResourceCap(resourceId);
-        const income = MainStore.ResourcesStore.getTimerValue(resource);
+        const current = Resources.getValue(resourceId);
+        const cap = Resources.getCap(resourceId);
+        const income = Resources.getIncome(resourceId);
 
         // Already at cap - leave blank
         if (current >= cap) {
@@ -83,6 +81,7 @@ export function initTimeToCap() {
     // Find resource table
     function findResourceTable() {
         const tables = document.querySelectorAll('table');
+        const resourceIds = Resources.getAll().map(r => r.id);
 
         for (let table of tables) {
             const rows = table.querySelectorAll('tbody tr, tr');
@@ -91,7 +90,6 @@ export function initTimeToCap() {
                 const firstCell = row.querySelector('td, th');
                 if (firstCell) {
                     const text = firstCell.textContent.trim().toLowerCase();
-                    const resourceIds = MainStore.run.resources.map(r => r.id);
 
                     if (resourceIds.some(id => text.includes(id) || id.includes(text))) {
                         return { table, rows: Array.from(rows) };
@@ -109,7 +107,7 @@ export function initTimeToCap() {
         if (cells.length === 0) return null;
 
         const firstCellText = cells[0].textContent.trim().toLowerCase();
-        const resources = MainStore.run.resources;
+        const resources = Resources.getAll();
 
         for (let resource of resources) {
             const id = resource.id.toLowerCase();

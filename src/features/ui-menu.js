@@ -13,7 +13,9 @@ export function initUIMenu() {
             return JSON.parse(settings);
         }
         return {
-            timeToCapEnabled: true // Default: enabled
+            timeToCapEnabled: true, // Default: enabled
+            groupUnitsByClass: true, // Default: enabled
+            explainGameMechanics: true // Default: enabled
         };
     };
 
@@ -102,15 +104,15 @@ export function initUIMenu() {
 
         // Create fixed container
         const container = document.createElement('div');
-        container.className = 'fixed z-10 inset-0';
+        container.className = 'fixed z-10 inset-0 pointer-events-none';
 
         // Create flex wrapper
         const wrapper = document.createElement('div');
-        wrapper.className = 'flex items-center justify-end min-h-full text-center';
+        wrapper.className = 'flex items-center justify-end min-h-full text-center pointer-events-none';
 
         // Create panel
         const panel = document.createElement('div');
-        panel.className = 'somuchmore_panel relative bg-gray-100 dark:bg-mydark-600 px-4 py-5 text-left overflow-hidden shadow-xl transform transition-all h-screen lg:max-w-sm lg:w-full lg:p-6';
+        panel.className = 'somuchmore_panel relative bg-gray-100 dark:bg-mydark-600 px-4 py-5 text-left overflow-hidden shadow-xl transform transition-all h-screen lg:max-w-sm lg:w-full lg:p-6 pointer-events-auto';
 
         // Close button
         const closeBtn = document.createElement('div');
@@ -160,6 +162,28 @@ export function initUIMenu() {
                     </div>
                 </div>
             </div>
+            <div class="bg-white dark:bg-mydark-500 rounded-xl p-5 shadow-lg border border-gray-200 dark:border-mydark-300">
+                <h4 class="font-game mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                    <svg viewBox="0 0 24 24" role="presentation" class="icon mr-2 w-5 h-5" style="color: deeppink;">
+                        <path d="M6.2,2.44L18.1,14.34L20.22,12.22L21.63,13.63L19.16,16.1L22.34,19.28C22.73,19.67 22.73,20.3 22.34,20.69L21.63,21.4C21.24,21.79 20.61,21.79 20.22,21.4L17,18.23L14.56,20.7L13.15,19.29L15.27,17.17L3.37,5.27V2.44H6.2M15.89,10L20.63,5.26V2.44H17.8L13.06,7.18L15.89,10M10.94,15L8.11,12.13L5.9,14.34L3.78,12.22L2.37,13.63L4.84,16.1L1.66,19.29C1.27,19.68 1.27,20.31 1.66,20.7L2.37,21.41C2.76,21.8 3.39,21.8 3.78,21.41L7,18.23L9.44,20.7L10.85,19.29L8.73,17.17L10.94,15Z" style="fill: currentcolor;"></path>
+                    </svg>
+                    Army
+                </h4>
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-mydark-600 rounded-lg">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Group units by class</span>
+                        <button class="somuchmore_toggle ${settings.groupUnitsByClass ? '' : 'bg-gray-200 dark:bg-gray-700'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none" style="background-color: ${settings.groupUnitsByClass ? 'deeppink' : ''}" role="switch" type="button" tabindex="0" aria-checked="${settings.groupUnitsByClass}" data-setting="groupUnitsByClass">
+                            <span class="${settings.groupUnitsByClass ? 'translate-x-5' : 'translate-x-0'} pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-mydark-600 rounded-lg">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Explain game mechanics</span>
+                        <button class="somuchmore_toggle ${settings.explainGameMechanics ? '' : 'bg-gray-200 dark:bg-gray-700'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none" style="background-color: ${settings.explainGameMechanics ? 'deeppink' : ''}" role="switch" type="button" tabindex="0" aria-checked="${settings.explainGameMechanics}" data-setting="explainGameMechanics">
+                            <span class="${settings.explainGameMechanics ? 'translate-x-5' : 'translate-x-0'} pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
 
         scrollArea.appendChild(contentArea);
@@ -176,8 +200,8 @@ export function initUIMenu() {
         document.body.appendChild(dialog);
 
         // Setup toggle event listeners
-        const toggleButton = contentArea.querySelector('.somuchmore_toggle');
-        if (toggleButton) {
+        const toggleButtons = contentArea.querySelectorAll('.somuchmore_toggle');
+        toggleButtons.forEach(toggleButton => {
             toggleButton.addEventListener('click', () => {
                 const settingName = toggleButton.getAttribute('data-setting');
                 settings[settingName] = !settings[settingName];
@@ -202,9 +226,13 @@ export function initUIMenu() {
                 // Apply setting
                 if (settingName === 'timeToCapEnabled') {
                     applyTimeToCapSetting(settings[settingName]);
+                } else if (settingName === 'groupUnitsByClass') {
+                    applyGroupUnitsSetting(settings[settingName]);
+                } else if (settingName === 'explainGameMechanics') {
+                    applyGameMechanicsSetting(settings[settingName]);
                 }
             });
-        }
+        });
     }
 
     // Apply time to cap setting
@@ -213,6 +241,29 @@ export function initUIMenu() {
         cells.forEach(cell => {
             cell.style.display = enabled ? '' : 'none';
         });
+    }
+
+    // Apply group units setting
+    function applyGroupUnitsSetting(enabled) {
+        console.log('[Somuchmore] Group units:', enabled);
+        if (window.somuchmoreGroupArmy) {
+            window.somuchmoreGroupArmy.apply(enabled);
+        }
+    }
+
+    // Apply game mechanics setting
+    function applyGameMechanicsSetting(enabled) {
+        console.log('[Somuchmore] Explain game mechanics:', enabled);
+
+        // Apply to grouped view (if active)
+        if (window.somuchmoreGroupArmy) {
+            window.somuchmoreGroupArmy.applyGameMechanics(enabled);
+        }
+
+        // Apply to standalone display (if active)
+        if (window.somuchmoreGameMechanics) {
+            window.somuchmoreGameMechanics.apply(enabled);
+        }
     }
 
     // Toggle menu open/close
@@ -232,9 +283,11 @@ export function initUIMenu() {
         if (!createMenuIcon()) return false;
         createSidebar();
 
-        // Apply initial time-to-cap setting
+        // Apply initial settings
         setTimeout(() => {
             applyTimeToCapSetting(settings.timeToCapEnabled);
+            applyGroupUnitsSetting(settings.groupUnitsByClass);
+            applyGameMechanicsSetting(settings.explainGameMechanics);
         }, 1000);
 
         return true;
@@ -256,7 +309,8 @@ export function initUIMenu() {
     // Expose settings for other modules
     window.somuchmoreSettings = {
         get: () => settings,
-        isTimeToCapEnabled: () => settings.timeToCapEnabled
+        isTimeToCapEnabled: () => settings.timeToCapEnabled,
+        isGroupUnitsByClass: () => settings.groupUnitsByClass
     };
 
     return true;

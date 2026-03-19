@@ -2,6 +2,9 @@
 import { Somuchmore } from './features/somuchmore';
 import { initTimeToCap } from './features/time-to-cap';
 import { initUIMenu } from './features/ui-menu';
+import { intiGroupUnits } from './features/group-units';
+import { initGameMechanicsDisplay } from './features/game-mechanics';
+import { Debug, initGameData } from './core/game-data';
 
 (function() {
     'use strict';
@@ -13,11 +16,20 @@ import { initUIMenu } from './features/ui-menu';
         if (success) {
             console.log('[Somuchmore] Ready! Use window.Somuchmore or window.MainStore');
 
+            // Expose debug helper
+            window.somuchmoreDebug = Debug;
+
             // Initialize features
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (window.MainStore) {
+                    // Preload game data definitions
+                    await initGameData();
+
+                    // Initialize features
                     initTimeToCap();
                     initUIMenu();
+                    intiGroupUnits();
+                    initGameMechanicsDisplay();
                 }
             }, 500);
         }
