@@ -11,7 +11,9 @@ const userscriptHeader = `// ==UserScript==
 // @description  ${packageJson.description}
 // @author       ${packageJson.author}
 // @match        https://www.theresmoregame.com/play/*
-// @grant        none
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -44,6 +46,18 @@ module.exports = {
         clean: true,
     },
     mode: 'production',
+    module: {
+        rules: [
+            {
+                test: /\.svg$/,
+                use: 'raw-loader'
+            },
+            {
+                test: /\.(png|jpg|jpeg|gif)$/,
+                type: 'asset/inline'
+            }
+        ]
+    },
     optimization: {
         minimize: false, // Don't minify for easier debugging
     },
