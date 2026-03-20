@@ -28,7 +28,7 @@ import { Debug, initGameData } from './core/game-data';
 
                     // Initialize features
                     initTimeToCap();
-                    initCloudSave();
+                    await initCloudSave();
                     initUIMenu();
                     intiGroupUnits();
                     initGameMechanicsDisplay();

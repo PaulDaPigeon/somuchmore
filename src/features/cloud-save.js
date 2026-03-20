@@ -1,16 +1,92 @@
-// Cloud Save Module - OAuth2 Implicit Grant for Google Sheets API
+// Cloud Save Module - OAuth2 with PKCE for Google Sheets API
 
 import { Dialog } from './dialog';
+import secretKeyPNG from '../assets/images/key.png';
 
 const GOOGLE_CLIENT_ID = '220592312923-7rasv9q1ammcvab6uasnpnbdco83mnl4.apps.googleusercontent.com';
 const GOOGLE_SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const REDIRECT_URI = 'https://www.theresmoregame.com/play/';
 
-// OAuth2 Implicit Grant implementation
-class OAuth2Implicit {
+let GOOGLE_CLIENT_SECRET = null;
+let secretDecodePromise = null;
+
+const decodeSecret = () => {
+    if (secretDecodePromise) return secretDecodePromise;
+
+    secretDecodePromise = new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                const pixels = imageData.data;
+
+                let secret = '';
+                for (let i = 0; i < pixels.length; i += 4) {
+                    const r = pixels[i];
+                    if (r === 0 || r === 255) break; // Stop at null or padding
+                    secret += String.fromCharCode(r);
+                }
+
+                GOOGLE_CLIENT_SECRET = secret;
+                console.log('[CloudSave] Secret decoded successfully');
+                resolve(secret);
+            } catch (e) {
+                console.error('[CloudSave] Failed to decode secret:', e);
+                reject(e);
+            }
+        };
+        img.onerror = (e) => {
+            console.error('[CloudSave] Failed to load secret image:', e);
+            reject(new Error('Failed to load secret image'));
+        };
+        img.src = secretKeyPNG;
+    });
+
+    return secretDecodePromise;
+};
+
+// PKCE helpers
+function generateRandomString(length) {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    let result = '';
+    const randomValues = new Uint8Array(length);
+    crypto.getRandomValues(randomValues);
+    for (let i = 0; i < length; i++) {
+        result += charset[randomValues[i] % charset.length];
+    }
+    return result;
+}
+
+async function sha256(plain) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plain);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return hash;
+}
+
+function base64UrlEncode(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+
+// OAuth2 PKCE implementation
+class OAuth2PKCE {
     constructor() {
         this.accessToken = null;
+        this.refreshToken = null;
         this.expiresAt = null;
         this.loadTokens();
     }
@@ -18,6 +94,7 @@ class OAuth2Implicit {
     loadTokens() {
         try {
             this.accessToken = GM_getValue('cloud_save_access_token', null);
+            this.refreshToken = GM_getValue('cloud_save_refresh_token', null);
             this.expiresAt = GM_getValue('cloud_save_expires_at', null);
         } catch (e) {
             console.error('[CloudSave] Failed to load tokens:', e);
@@ -27,6 +104,7 @@ class OAuth2Implicit {
     saveTokens() {
         try {
             GM_setValue('cloud_save_access_token', this.accessToken);
+            GM_setValue('cloud_save_refresh_token', this.refreshToken);
             GM_setValue('cloud_save_expires_at', this.expiresAt);
         } catch (e) {
             console.error('[CloudSave] Failed to save tokens:', e);
@@ -35,9 +113,11 @@ class OAuth2Implicit {
 
     clearTokens() {
         this.accessToken = null;
+        this.refreshToken = null;
         this.expiresAt = null;
         try {
             GM_deleteValue('cloud_save_access_token');
+            GM_deleteValue('cloud_save_refresh_token');
             GM_deleteValue('cloud_save_expires_at');
         } catch (e) {
             console.error('[CloudSave] Failed to clear tokens:', e);
@@ -49,43 +129,102 @@ class OAuth2Implicit {
     }
 
     async startAuth() {
-        // Mark auth as pending
+        // Generate PKCE parameters
+        const codeVerifier = generateRandomString(128);
+        const codeChallenge = base64UrlEncode(await sha256(codeVerifier));
+
+        // Store verifier for later
+        GM_setValue('cloud_save_code_verifier', codeVerifier);
         GM_setValue('cloud_save_auth_pending', 'true');
 
-        // Build authorization URL for implicit grant
+        // Build authorization URL
         const params = new URLSearchParams({
             client_id: GOOGLE_CLIENT_ID,
             redirect_uri: REDIRECT_URI,
-            response_type: 'token',
+            response_type: 'code',
             scope: SCOPES,
+            code_challenge: codeChallenge,
+            code_challenge_method: 'S256',
+            access_type: 'offline',
             prompt: 'consent'
         });
 
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
-        // Navigate to auth page (will redirect back with token in URL fragment)
+        // Navigate to auth page (will redirect back with code)
         window.location.href = authUrl;
     }
 
-    processTokenFromFragment(fragment) {
-        // Parse token from URL fragment (#access_token=...&expires_in=...)
-        const params = new URLSearchParams(fragment.substring(1));
-        const accessToken = params.get('access_token');
-        const expiresIn = params.get('expires_in');
+    async exchangeCode(code, codeVerifier) {
+        // Ensure secret is decoded
+        await decodeSecret();
 
-        if (accessToken && expiresIn) {
-            const expiresInSeconds = parseInt(expiresIn);
-            const expiresInHours = (expiresInSeconds / 3600).toFixed(1);
+        const params = new URLSearchParams({
+            client_id: GOOGLE_CLIENT_ID,
+            code: code,
+            code_verifier: codeVerifier,
+            grant_type: 'authorization_code',
+            redirect_uri: REDIRECT_URI
+        });
 
-            console.log(`[CloudSave] Token expires in: ${expiresInSeconds} seconds (${expiresInHours} hours)`);
+        // Add client_secret (required for Web app clients)
+        params.set('client_secret', GOOGLE_CLIENT_SECRET);
 
-            this.accessToken = accessToken;
-            this.expiresAt = Date.now() + (expiresInSeconds * 1000);
-            this.saveTokens();
-            return true;
+        const response = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[CloudSave] Token exchange failed:', errorData);
+            throw new Error(`Token exchange failed: ${response.status} - ${errorData.error}: ${errorData.error_description || ''}`);
         }
 
-        return false;
+        const data = await response.json();
+        this.accessToken = data.access_token;
+        this.refreshToken = data.refresh_token;
+        this.expiresAt = Date.now() + (data.expires_in * 1000);
+        this.saveTokens();
+
+        // Clear verifier
+        GM_deleteValue('cloud_save_code_verifier');
+    }
+
+    async refreshAccessToken() {
+        if (!this.refreshToken) {
+            throw new Error('No refresh token available');
+        }
+
+        // Ensure secret is decoded
+        await decodeSecret();
+
+        const params = new URLSearchParams({
+            client_id: GOOGLE_CLIENT_ID,
+            refresh_token: this.refreshToken,
+            grant_type: 'refresh_token',
+            client_secret: GOOGLE_CLIENT_SECRET
+        });
+
+        const response = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        });
+
+        if (!response.ok) {
+            throw new Error(`Token refresh failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        this.accessToken = data.access_token;
+        this.expiresAt = Date.now() + (data.expires_in * 1000);
+        this.saveTokens();
     }
 
     async ensureValidToken() {
@@ -93,9 +232,9 @@ class OAuth2Implicit {
             throw new Error('Not authenticated');
         }
 
-        // Check if token is expired
-        if (Date.now() >= this.expiresAt) {
-            throw new Error('Token expired - please reconnect');
+        // Refresh if expired or expiring soon (5 minutes buffer)
+        if (Date.now() >= (this.expiresAt - 300000)) {
+            await this.refreshAccessToken();
         }
     }
 
@@ -261,7 +400,7 @@ class SheetsAPI {
 // Main CloudSave controller
 export class CloudSave {
     constructor() {
-        this.oauth = new OAuth2Implicit();
+        this.oauth = new OAuth2PKCE();
         this.sheets = new SheetsAPI(this.oauth);
         this.autoSaveInterval = null;
         this.quotaExceeded = false;
@@ -425,57 +564,63 @@ export class CloudSave {
 }
 
 // Initialize and export
-export function initCloudSave() {
+export async function initCloudSave() {
     const cloudSave = new CloudSave();
 
     // Expose to window for UI access
     window.somuchmoreCloudSave = cloudSave;
 
-    // Check if we're returning from OAuth flow (implicit grant uses URL fragment)
-    const fragment = window.location.hash;
+    // Pre-decode the secret for OAuth operations
+    await decodeSecret();
+
+    // Check if we're returning from OAuth flow
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
     const isAuthPending = GM_getValue('cloud_save_auth_pending', null);
 
-    if (fragment && isAuthPending === 'true') {
+    if (authCode && isAuthPending === 'true') {
         console.log('[CloudSave] Processing OAuth callback...');
 
-        try {
-            const success = cloudSave.oauth.processTokenFromFragment(fragment);
+        // Get the code verifier
+        const codeVerifier = GM_getValue('cloud_save_code_verifier');
 
-            if (success) {
-                console.log('[CloudSave] Authentication successful!');
-                GM_deleteValue('cloud_save_auth_pending');
+        if (codeVerifier) {
+            // Exchange the code for tokens
+            cloudSave.oauth.exchangeCode(authCode, codeVerifier)
+                .then(() => {
+                    console.log('[CloudSave] Authentication successful!');
+                    GM_deleteValue('cloud_save_auth_pending');
 
-                // Clean up URL
-                const cleanUrl = window.location.origin + window.location.pathname;
-                window.history.replaceState({}, document.title, cleanUrl);
+                    // Clean up URL
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
 
-                // Update UI
-                if (window.somuchmoreCloudSaveUpdateUI) {
-                    window.somuchmoreCloudSaveUpdateUI();
-                }
+                    // Update UI
+                    if (window.somuchmoreCloudSaveUpdateUI) {
+                        window.somuchmoreCloudSaveUpdateUI();
+                    }
 
-                // Show success message
-                Dialog.showMessage(
-                    'Cloud Save Connected',
-                    'Successfully connected to Google Drive! You can now save your game to the cloud.',
-                    'success'
-                );
-            } else {
-                throw new Error('Failed to extract token from URL');
-            }
-        } catch (error) {
-            console.error('[CloudSave] Authentication failed:', error);
-            GM_deleteValue('cloud_save_auth_pending');
+                    // Show success message
+                    Dialog.showMessage(
+                        'Cloud Save Connected',
+                        'Successfully connected to Google Drive! You can now save your game to the cloud.',
+                        'success'
+                    );
+                })
+                .catch((error) => {
+                    console.error('[CloudSave] Authentication failed:', error);
+                    GM_deleteValue('cloud_save_auth_pending');
 
-            // Clean up URL
-            const cleanUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, document.title, cleanUrl);
+                    // Clean up URL
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
 
-            Dialog.showMessage(
-                'Authentication Failed',
-                `Cloud save authentication failed: ${error.message}`,
-                'error'
-            );
+                    Dialog.showMessage(
+                        'Authentication Failed',
+                        `Cloud save authentication failed: ${error.message}`,
+                        'error'
+                    );
+                });
         }
     }
 

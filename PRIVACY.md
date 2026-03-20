@@ -33,7 +33,7 @@ If you choose to enable the **Cloud Save** feature:
 
 1. **Google OAuth Authentication**
    - You authenticate directly with Google (not through us)
-   - We use OAuth 2.0 with Implicit Grant for secure authorization
+   - We use OAuth 2.0 with PKCE for secure authorization
    - You grant permission to create and access spreadsheets in your Google Drive
 
 2. **Google Drive Storage**
@@ -72,14 +72,9 @@ The userscript runs on `theresmoregame.com`:
 
 This is an **open-source project**:
 - All code is publicly available on GitHub
-- The source code includes the Google OAuth Client ID (no client secret required)
-- We use OAuth 2.0 Implicit Grant flow, designed for client-side applications
-- Users authenticate with their own Google accounts - the Client ID only identifies this app to Google
-
-**Why is the Client ID public?**
-- Implicit Grant flow is designed for public clients (browser apps, userscripts)
-- No client secret is needed or used
-- The Client ID doesn't grant access to user data - users must explicitly authorize the app
+- The source code includes Google OAuth client credentials
+- These credentials are necessary for the OAuth flow and are safe to expose in client-side applications
+- Users authenticate with their own Google accounts - the credentials only identify this app to Google
 - Google OAuth protects against abuse through rate limiting and consent screens
 - Users can revoke access at any time through their Google account settings
 
