@@ -4,6 +4,7 @@ import { initTimeToCap } from './features/time-to-cap';
 import { initUIMenu } from './features/ui-menu';
 import { intiGroupUnits } from './features/group-units';
 import { initGameMechanicsDisplay } from './features/game-mechanics';
+import { initCloudSave } from './features/cloud-save';
 import { Debug, initGameData } from './core/game-data';
 
 (function() {
@@ -27,6 +28,7 @@ import { Debug, initGameData } from './core/game-data';
 
                     // Initialize features
                     initTimeToCap();
+                    initCloudSave();
                     initUIMenu();
                     intiGroupUnits();
                     initGameMechanicsDisplay();

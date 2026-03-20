@@ -1,42 +1,5 @@
 # Planned Features
 
-## Cloud Save Backup
-
-### PKCE OAuth2 Implementation (Priority 1)
-- [ ] Implement PKCE flow for Google Sheets API authentication
-  - OAuth2 without client secret (secure for userscripts)
-  - User authenticates with their Google account
-  - Store tokens in `GM_setValue` (persistent, secure)
-  - Access/refresh token management
-- [ ] Save game state to user's Google Sheet
-  - MainStore data serialization
-  - Include settings backup
-  - Version/timestamp metadata
-- [ ] Load/restore from Google Sheet
-  - Manual restore option
-  - Verify data integrity before loading
-- [ ] Graceful quota handling
-  - Detect 429 (quota exceeded) errors
-  - Show user-friendly notifications
-  - Temporary disable with auto-retry
-  - Clear messaging when quota limits reached
-- [ ] Save management UI
-  - List available saves
-  - Manual save/load buttons
-  - Optional auto-backup (periodic)
-  - Delete old saves
-
-### Apps Script Fallback (Low Priority - Future Scaling)
-- [ ] If PKCE quota becomes issue with high user count
-- [ ] Provide Apps Script template for users
-  - Each user deploys own script
-  - Uses their own quota (infinite scaling)
-  - 1-click setup instructions
-  - User pastes script URL into settings
-- [ ] Alternative to shared PKCE quota
-  - Only implement if needed
-  - Migration path from PKCE
-
 ## Early Game Automation
 
 ### Auto-Clicker for First Age Resources
@@ -141,22 +104,20 @@
 ## Priority Order
 
 **Phase 1 (High Priority):**
-1. **Cloud Save Backup (PKCE OAuth2)** - Most requested, critical QOL
-2. **Auto-Clicker for First Age Resources** - Simple, high impact for early game
-3. Resource progress indicators on Build tab
-4. Enemy numbers display on Attack tab
-5. Discovery indicator on Explore tab
+1. **Auto-Clicker for First Age Resources** - Simple, high impact for early game
+2. Resource progress indicators on Build tab
+3. Enemy numbers display on Attack tab
+4. Discovery indicator on Explore tab
 
 **Phase 2 (Medium Priority):**
-6. Battle prediction/oracle feature
-7. Diplomacy relationship calculator
-8. Auto-buy buildings system
+5. Battle prediction/oracle feature
+6. Diplomacy relationship calculator
+7. Auto-buy buildings system
 
 **Phase 3 (Lower Priority):**
-9. Auto-buy research system
-10. Wiki feature (large undertaking)
-11. Advanced customization options
-12. Apps Script fallback (only if PKCE quota becomes issue)
+8. Auto-buy research system
+9. Wiki feature (large undertaking)
+10. Advanced customization options
 
 ## Technical Considerations
 
