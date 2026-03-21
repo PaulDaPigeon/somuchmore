@@ -21,3 +21,6 @@ Thumbs.db
 # Temp files
 *.tmp
 .cache/
+
+# Local Claude instructions (not committed)
+CLAUDE.local.md
