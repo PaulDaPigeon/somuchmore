@@ -26,9 +26,9 @@ export function getMainStore() {
     console.log('[Somuchmore] Attempting to find MainStore...');
 
     // Method 0: Check if it's already exposed globally
-    if (window.MainStore) {
-        console.log('[Somuchmore] Found MainStore as window.MainStore');
-        return window.MainStore;
+    if (window.Somuchmore?.MainStore) {
+        console.log('[Somuchmore] Found MainStore as window.Somuchmore.MainStore');
+        return window.Somuchmore.MainStore;
     }
 
     // Method 1: Look for React fiber tree (React 18+)

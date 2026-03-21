@@ -1,9 +1,9 @@
 // Dialog Module - Reusable modal dialogs for confirmations and messages
 
-import infoIconSVG from '../assets/icons/info.svg';
-import successIconSVG from '../assets/icons/success.svg';
-import warningIconSVG from '../assets/icons/warning.svg';
-import errorIconSVG from '../assets/icons/error.svg';
+import infoIconSVG from '../../assets/icons/info.svg';
+import successIconSVG from '../../assets/icons/success.svg';
+import warningIconSVG from '../../assets/icons/warning.svg';
+import errorIconSVG from '../../assets/icons/error.svg';
 
 export const Dialog = {
     /**

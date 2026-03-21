@@ -1,10 +1,10 @@
 // Somuchmore - Userscript for Theresmore game - Main Entry Point
 import { Somuchmore } from './features/somuchmore';
 import { initTimeToCap } from './features/time-to-cap';
-import { initUIMenu } from './features/ui-menu';
-import { intiGroupUnits } from './features/group-units';
-import { initGameMechanicsDisplay } from './features/game-mechanics';
-import { initCloudSave } from './features/cloud-save';
+import { initUIMenu } from './features/ui/menu/ui-menu';
+import { initGroupUnits } from './features/group-units';
+import { initGameMechanicsDisplay } from './features/game-mechanics/game-mechanics';
+import { initCloudSave } from './features/cloud-save/cloud-save';
 import { Debug, initGameData } from './core/game-data';
 
 (function() {
@@ -15,14 +15,14 @@ import { Debug, initGameData } from './core/game-data';
     // Initialize Somuchmore
     Somuchmore.init().then(success => {
         if (success) {
-            console.log('[Somuchmore] Ready! Use window.Somuchmore or window.MainStore');
+            console.log('[Somuchmore] Ready! Use window.Somuchmore');
 
-            // Expose debug helper
-            window.somuchmoreDebug = Debug;
+            // Expose debug helper under Somuchmore
+            window.Somuchmore.debug = Debug;
 
             // Initialize features
             setTimeout(async () => {
-                if (window.MainStore) {
+                if (window.Somuchmore?.MainStore) {
                     // Preload game data definitions
                     await initGameData();
 
@@ -30,7 +30,7 @@ import { Debug, initGameData } from './core/game-data';
                     initTimeToCap();
                     await initCloudSave();
                     initUIMenu();
-                    intiGroupUnits();
+                    initGroupUnits();
                     initGameMechanicsDisplay();
                 }
             }, 500);

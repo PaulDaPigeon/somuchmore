@@ -18,7 +18,7 @@ export const Somuchmore = {
 
         console.log('[Somuchmore] MainStore found!', this.store);
         window.Somuchmore = this;
-        window.MainStore = this.store;
+        window.Somuchmore.MainStore = this.store;
 
         this.logInfo();
         return true;
@@ -32,7 +32,7 @@ export const Somuchmore = {
         }
 
         this.store = store;
-        window.MainStore = store;
+        window.Somuchmore.MainStore = store;
         console.log('[Somuchmore] Store manually set!');
         this.logInfo();
         return true;

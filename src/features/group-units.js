@@ -1,10 +1,12 @@
 // Group Army Units by Class
 import { getTabMonitor } from '../core/tab-monitor';
 import { Army } from '../core/game-data';
-import { getSectionIcon, createAdvantageDiagram, createSpecialAbilities } from './game-mechanics';
+import { getSectionIcon } from './game-mechanics/icons';
+import { createAdvantageDiagram, createSpecialAbilities } from './game-mechanics/game-mechanics';
+import { createExplorationTooltipHTML, createIconHTML } from './ui/menu/group-units-templates';
 
-export function intiGroupUnits() {
-    if (!window.MainStore) {
+export function initGroupUnits() {
+    if (!window.Somuchmore?.MainStore) {
         console.error('[Somuchmore] MainStore not available');
         return false;
     }
@@ -36,17 +38,12 @@ export function intiGroupUnits() {
         header.className = 'w-full pb-3 font-bold text-center xl:text-left flex items-center justify-center xl:justify-start text-gray-800 dark:text-gray-200 relative';
 
         const icon = getSectionIcon(title);
-        const iconClass = icon.iconClass || 'text-white';
 
         // Create icon container
         const iconDiv = document.createElement('div');
         iconDiv.className = 'p-1.5 rounded-full mr-2 shadow-md';
         iconDiv.style.cssText = icon.style;
-        iconDiv.innerHTML = `
-            <svg viewBox="0 0 24 24" role="presentation" class="w-4 h-4 ${iconClass}">
-                <path d="${icon.path}" style="fill: currentcolor;"></path>
-            </svg>
-        `;
+        iconDiv.innerHTML = createIconHTML(icon);
 
         // Create title text
         const titleSpan = document.createElement('span');
@@ -66,16 +63,7 @@ export function intiGroupUnits() {
             tooltip.style.left = '0';
             tooltip.style.marginTop = '8px';
             tooltip.style.display = 'none';
-            tooltip.innerHTML = `
-                <p class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">How does scouting work?</p>
-                <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">During a scouting mission your scouts can die, find resources, have nothing happen to them, find up to two enemies and up to one faction. If the enemy/faction limit is reached or all enemies/factions available are found, you get nothing instead.</p>
-                <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">In addition, there's a second roll if you found a faction/enemy. The game picks 1 out of 40 areas. If all enemies in the area are already found, you again gain nothing.</p>
-                <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">An enemy can be in one or more areas. This is why some battles are easier to find than others.</p>
-                <p class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Chances:</p>
-                <p class="mb-1 text-sm text-gray-600 dark:text-gray-400">• Zenyx familiars: 33.3% enemy, 50% loot, 16.7% nothing</p>
-                <p class="mb-1 text-sm text-gray-600 dark:text-gray-400">• Explorers: 41.7% enemy, 16.7% kingdom, 16.7% loot, 16.7% nothing, 8.3% dying</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">• Scouts and drones: 20% enemy, 20% kingdom, 20% loot, 30% nothing, 10% dying</p>
-            `;
+            tooltip.innerHTML = createExplorationTooltipHTML();
 
             header.addEventListener('mouseenter', () => {
                 tooltip.style.display = 'block';
@@ -263,7 +251,7 @@ export function intiGroupUnits() {
         selectorGrid.appendChild(selectorWrapper);
 
         // Load settings to check if game mechanics should be shown
-        const settings = window.somuchmoreSettings?.get() || { explainGameMechanics: true };
+        const settings = window.Somuchmore?.settings?.get() || { explainGameMechanics: true };
 
         selectorContent.appendChild(selectorGrid);
 
@@ -314,7 +302,7 @@ export function intiGroupUnits() {
 
     // Handle tab changes
     function handleTabChange({ mainTab, subTab, container }) {
-        const settings = window.somuchmoreSettings?.get() || {};
+        const settings = window.Somuchmore?.settings?.get() || {};
 
         // Check if we're on Army tab
         if (mainTab === 'army' && subTab === 'army') {
@@ -380,8 +368,9 @@ export function intiGroupUnits() {
         }
     }
 
-    // Expose API
-    window.somuchmoreGroupArmy = {
+    // Expose API under Somuchmore
+    window.Somuchmore = window.Somuchmore || {};
+    window.Somuchmore.groupArmy = {
         apply: applySetting,
         isGrouped: () => isGrouped,
         applyGameMechanics: applyGameMechanics

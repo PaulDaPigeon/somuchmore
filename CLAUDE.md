@@ -35,20 +35,25 @@ The initialization sequence in `src/index.js`:
 Somuchmore.init() → initGameData() → [features initialize]
 ```
 
-**Critical**: All features must wait for `window.MainStore` to be available before operating. Features use retry loops with MutationObserver to handle delayed DOM rendering.
+**Critical**: All features must wait for `window.Somuchmore.MainStore` to be available before operating. Features use retry loops with MutationObserver to handle delayed DOM rendering.
 
 ### 2. Game Data Abstraction Layer
 
-`src/core/game-data.js` provides a stable API to access game state, hiding MainStore's internal structure:
+The game data abstraction is split into focused modules under `src/core/`:
 
-- **Resources**: `getValue()`, `getCap()`, `getIncome()` - for resource tracking
-- **Army**: `getCount()`, `getClass()`, `getAllIdsFromDisplayName()` - for unit management
-- **Buildings**, **Techs**: Basic getters for game entities
+- **`resources.js`**: `getValue()`, `getCap()`, `getIncome()` - for resource tracking
+- **`army.js`**: `getCount()`, `getClass()`, `getAllIdsFromDisplayName()` - for unit management with classification logic
+- **`buildings.js`**: Basic getters for building entities
+- **`techs.js`**: Basic getters for technology entities
+- **`debug.js`**: Debug helpers and cleanup hooks
+- **`game-data.js`**: Re-exports all modules for convenient importing
 
 **Important patterns**:
+- Each module uses `window.Somuchmore.MainStore` via a private `getStore()` function
 - Unit definitions (category, cap) are scraped from the game's bundled JavaScript on init
 - Unit translations (display name → ID) are also scraped to handle dynamic content
 - The abstraction layer allows features to survive game updates that change MainStore internals
+- **Prefer small, focused modules over large monolithic files**
 
 ### 3. Feature Structure
 
@@ -57,7 +62,7 @@ Each feature follows this pattern:
 ```javascript
 export function initFeature() {
     // 1. Check MainStore availability
-    if (!window.MainStore) return false;
+    if (!window.Somuchmore?.MainStore) return false;
 
     // 2. Load/define settings
     const settings = loadSettings();
@@ -78,8 +83,9 @@ export function initFeature() {
     // 5. MutationObserver to reapply on DOM changes
     const observer = new MutationObserver(...)
 
-    // 6. Expose API for settings updates
-    window.somuchmoreFeatureName = {
+    // 6. Expose API under window.Somuchmore
+    window.Somuchmore = window.Somuchmore || {};
+    window.Somuchmore.featureName = {
         apply: (settings) => {...}
     };
 
@@ -91,22 +97,32 @@ export function initFeature() {
 - Features retry setup up to 15 times (game tabs load asynchronously)
 - MutationObserver watches for DOM changes (React re-renders destroy injected elements)
 - Settings are stored in `localStorage` under `somuchmore_settings`
-- Features expose `window.somuchmore*` APIs for integration with the UI menu
+- **All APIs must be exposed under `window.Somuchmore.*` to keep global namespace clean**
+- Use `window.Somuchmore._privateMethod` for internal callbacks (prefix with underscore)
 
 ### 4. Settings System
 
 Settings flow:
 1. **Storage**: All settings in single `localStorage` key: `somuchmore_settings`
-2. **UI Menu** (`src/features/ui-menu.js`): Sidebar with toggles/inputs
-3. **Apply Functions**: Each feature exposes `apply(settings)` via `window.somuchmore*`
-4. **Real-time Updates**: UI menu calls apply functions when settings change
+2. **UI Menu** (`src/features/ui/menu/ui-menu.js`): Sidebar with toggles/inputs
+3. **Feature UI modules** (`src/features/ui/menu/*-ui.js`): Each feature has its own UI handler
+4. **Real-time Updates**: UI menu calls feature-specific `applySetting()` functions
+
+**Modular UI structure**:
+- `ui-menu.js`: Core menu setup, settings persistence, toggle event handling
+- `templates.js`: HTML template functions for menu content
+- Feature-specific UI modules:
+  - `time-to-cap-ui.js`: Time to cap visibility control
+  - `group-units-ui.js`: Army grouping control
+  - `game-mechanics-ui.js`: Game mechanics display control
+  - `cloud-save-ui.js`: Cloud save UI, auth, dialogs
 
 To add a new setting:
 1. Add default value in `ui-menu.js` `loadSettings()`
-2. Add UI control in `contentArea.innerHTML`
-3. Add event handler logic in toggle/input listeners
-4. Create `applyFeatureSettings()` function that calls `window.somuchmoreFeature.apply()`
-5. Feature exposes `window.somuchmoreFeature = { apply: ... }`
+2. Add UI control to `templates.js` `createContentArea()`
+3. Create new `*-ui.js` module with `applySetting(enabled)` export
+4. Import and call in `ui-menu.js` toggle handler
+5. Feature exposes API under `window.Somuchmore.featureName`
 
 ### 5. DOM Integration Patterns
 
@@ -133,14 +149,102 @@ for (let row of rows) {
 
 ### 6. Cloud Save Architecture
 
-Cloud save uses OAuth2 PKCE flow + Google Drive API:
+Cloud save is organized as a multi-module feature in `src/features/cloud-save/`:
 
-- **Auth flow**: Redirects to Google OAuth, returns to game with code, exchanges for token
-- **Storage**: Access token in `localStorage`, PNG obfuscation for client_secret
-- **Auto-save**: Optional 30-minute interval (configurable via UI)
-- **Data format**: Base64-encoded JSON uploaded to Google Drive
+- **`constants.js`**: API endpoints, OAuth configuration
+- **`secret-decoder.js`**: PNG-embedded client_secret decoding
+- **`pkce.js`**: PKCE helper functions (code verifier, SHA-256, base64url)
+- **`oauth.js`**: OAuth2PKCE class - authentication flow
+- **`sheets-api.js`**: SheetsAPI class - Google Sheets operations (create, append, list, delete)
+- **`controller.js`**: CloudSave class - main business logic (save/load/auto-save)
+- **`cloud-save.js`**: Initialization and OAuth callback handling
+
+**Flow**:
+- **Auth**: Redirects to Google OAuth → returns with code → exchanges for token
+- **Storage**: Access token in `localStorage`, client_secret PNG-obfuscated
+- **Auto-save**: Optional 30-minute interval
+- **Data format**: JSON saved to Google Sheets rows
 
 The PNG secret embedding was implemented in a separate repository (not included here).
+
+## Code Organization Principles
+
+**Module size and responsibility**:
+- Keep modules focused on a single responsibility
+- Split files when they exceed ~300 lines or handle multiple concerns
+- Prefer multiple small modules over one large file
+
+**Directory structure**:
+```
+src/
+├── assets/             # Static assets
+│   └── icons/          # SVG icon files (referenced by game-mechanics)
+│       ├── exploration.svg
+│       ├── espionage.svg
+│       ├── officers.svg
+│       ├── ranged.svg
+│       ├── shock.svg
+│       ├── tank.svg
+│       ├── cavalry.svg
+│       ├── splash.svg
+│       └── trample.svg
+├── core/               # Core abstractions and utilities
+│   ├── game-data.js    # Re-exports all game data modules
+│   ├── resources.js    # Resource helpers
+│   ├── army.js         # Army/unit helpers
+│   ├── buildings.js    # Building helpers
+│   ├── techs.js        # Technology helpers
+│   ├── debug.js        # Debug utilities
+│   └── store-detector.js
+├── features/
+│   ├── cloud-save/     # Multi-file feature (directory)
+│   │   ├── cloud-save.js    # Main entry point
+│   │   ├── controller.js    # Business logic
+│   │   ├── oauth.js         # Auth flow
+│   │   ├── sheets-api.js    # API client
+│   │   ├── pkce.js          # Crypto utilities
+│   │   ├── secret-decoder.js
+│   │   └── constants.js
+│   ├── game-mechanics/ # Multi-file feature (directory)
+│   │   ├── game-mechanics.js # Main entry point
+│   │   ├── icons.js          # Icon definitions
+│   │   └── templates.js      # HTML templates
+│   ├── ui/
+│   │   ├── dialog.js
+│   │   └── menu/       # Menu feature modules
+│   │       ├── ui-menu.js          # Main menu controller
+│   │       ├── templates.js        # HTML templates
+│   │       ├── time-to-cap-ui.js   # Feature UI
+│   │       ├── group-units-ui.js   # Feature UI
+│   │       ├── game-mechanics-ui.js # Feature UI
+│   │       └── cloud-save-ui.js    # Feature UI
+│   ├── time-to-cap.js  # Single-file features
+│   └── group-units.js
+└── index.js
+```
+
+**When to split a file**:
+- Business logic vs UI logic → separate files
+- Multiple unrelated responsibilities → separate modules
+- Large HTML templates → extract to templates file
+- Reusable utilities → extract to shared module
+- Feature exceeds ~300 lines → split into directory with focused modules
+
+**When a feature needs its own directory**:
+- Feature has 2+ files (logic + templates, logic + icons, etc.)
+- Create `features/<feature-name>/` directory
+- Main entry point: `<feature-name>.js`
+- Supporting files: `templates.js`, `icons.js`, `constants.js`, etc.
+
+**SVG assets**:
+- Store SVG files in `src/assets/icons/`
+- Import SVGs using webpack's `raw-loader` (configured in webpack.config.js)
+- Use correct relative paths when importing:
+  - From `src/features/ui/`: `../../assets/icons/filename.svg`
+  - From `src/features/ui/menu/`: `../../../assets/icons/filename.svg`
+  - From `src/features/game-mechanics/`: `../../assets/icons/filename.svg`
+- SVG content imported as string, then parsed to extract path data
+- SVG files are the source of truth - edit SVG files to update icons
 
 ## Webpack Userscript Build
 
@@ -152,12 +256,39 @@ The `UserscriptHeaderPlugin` in `webpack.config.js`:
 
 Output is a single `.user.js` file that Tampermonkey can install directly.
 
+## Global Namespace Organization
+
+**All userscript APIs are organized under `window.Somuchmore` to keep the global namespace clean:**
+
+```javascript
+window.Somuchmore = {
+    // Core
+    MainStore,           // Game state object
+    debug,              // Debug helpers
+    settings,           // Settings API
+
+    // Features
+    cloudSave,          // Cloud save API
+    groupArmy,          // Army grouping
+    gameMechanics,      // Game mechanics display
+
+    // Internal (prefix with _)
+    _cloudSaveUpdateUI, // Private callback
+    _cleanupHook        // Private debug hook
+};
+```
+
+**Rules:**
+- Never add top-level `window.somuchmore*` properties (use `window.Somuchmore.*` instead)
+- Private/internal APIs should be prefixed with underscore: `window.Somuchmore._privateMethod`
+- Always use `window.Somuchmore.MainStore` (never `window.MainStore`)
+
 ## Testing in Development
 
 1. Run `npm run dev` (watch mode)
 2. Install `dist/somuchmore.user.js` in Tampermonkey
 3. Changes auto-rebuild, **manually reload the game page** to test
-4. Use browser console to inspect `window.Somuchmore`, `window.MainStore`, `window.somuchmoreDebug`
+4. Use browser console to inspect `window.Somuchmore` and its properties
 
 ## Planned Features
 

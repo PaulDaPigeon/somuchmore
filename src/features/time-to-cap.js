@@ -2,10 +2,15 @@
 import { Resources } from '../core/game-data';
 
 export function initTimeToCap() {
-    if (!window.MainStore) {
+    if (!window.Somuchmore?.MainStore) {
         console.error('[Somuchmore] MainStore not available');
         return false;
     }
+
+    // Module-level state for cleanup
+    let updateInterval = null;
+    let domObserver = null;
+    let currentRows = null;
 
     // Load settings to check if feature is enabled
     const loadSettings = () => {
@@ -225,6 +230,31 @@ export function initTimeToCap() {
         });
     }
 
+    // Start updating values on interval
+    function startUpdating(rows) {
+        // Clear any existing interval
+        if (updateInterval) {
+            clearInterval(updateInterval);
+        }
+
+        currentRows = rows;
+        updateInterval = setInterval(() => {
+            updateValues(rows);
+        }, 1000);
+
+        // Initial update
+        updateValues(rows);
+    }
+
+    // Stop updating
+    function stopUpdating() {
+        if (updateInterval) {
+            clearInterval(updateInterval);
+            updateInterval = null;
+        }
+        currentRows = null;
+    }
+
     // Main setup
     function setup() {
         const result = findResourceTable();
@@ -232,13 +262,8 @@ export function initTimeToCap() {
 
         const { rows } = result;
         ensureCells(rows);
+        startUpdating(rows);
 
-        function update() {
-            updateValues(rows);
-            setTimeout(update, 1000);
-        }
-
-        update();
         return true;
     }
 
@@ -256,16 +281,36 @@ export function initTimeToCap() {
     trySetup();
 
     // Watch for DOM changes (check if our cells are still present)
-    const observer = new MutationObserver(() => {
+    domObserver = new MutationObserver(() => {
         if (!document.querySelector('.somuchmore_ttc')) {
+            attempts = 0;
             trySetup();
         }
     });
 
-    observer.observe(document.body, {
+    domObserver.observe(document.body, {
         childList: true,
         subtree: true
     });
+
+    // Expose API under Somuchmore
+    window.Somuchmore = window.Somuchmore || {};
+    window.Somuchmore.timeToCap = {
+        apply: (enabled) => {
+            const cells = document.querySelectorAll('.somuchmore_ttc');
+            cells.forEach(cell => {
+                cell.style.display = enabled ? '' : 'none';
+            });
+        },
+        isRunning: () => updateInterval !== null,
+        _cleanup: () => {
+            stopUpdating();
+            if (domObserver) {
+                domObserver.disconnect();
+                domObserver = null;
+            }
+        }
+    };
 
     return true;
 }
