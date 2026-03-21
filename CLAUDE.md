@@ -45,7 +45,6 @@ The game data abstraction is split into focused modules under `src/core/`:
 - **`army.js`**: `getCount()`, `getClass()`, `getAllIdsFromDisplayName()` - for unit management with classification logic
 - **`buildings.js`**: Basic getters for building entities
 - **`techs.js`**: Basic getters for technology entities
-- **`debug.js`**: Debug helpers and cleanup hooks
 - **`game-data.js`**: Re-exports all modules for convenient importing
 
 **Important patterns**:
@@ -199,7 +198,6 @@ src/
 │   ├── army.js         # Army/unit helpers
 │   ├── buildings.js    # Building helpers
 │   ├── techs.js        # Technology helpers
-│   ├── debug.js        # Debug utilities
 │   └── store-detector.js
 ├── features/
 │   ├── cloud-save/     # Multi-file feature (directory)
@@ -271,17 +269,16 @@ Output is a single `.user.js` file that Tampermonkey can install directly.
 window.Somuchmore = {
     // Core
     MainStore,           // Game state object
-    debug,              // Debug helpers
     settings,           // Settings API
 
     // Features
     cloudSave,          // Cloud save API
     groupArmy,          // Army grouping
     gameMechanics,      // Game mechanics display
+    autoClicker,        // Auto-clicker
 
     // Internal (prefix with _)
-    _cloudSaveUpdateUI, // Private callback
-    _cleanupHook        // Private debug hook
+    _cloudSaveUpdateUI  // Private callback
 };
 ```
 
@@ -336,7 +333,7 @@ realWindow.Somuchmore.featureName = { ... };
 
 **Files that must use this pattern:** ALL files that reference `window.Somuchmore` - this includes:
 - `src/index.js`
-- All modules in `src/core/` (resources.js, army.js, buildings.js, techs.js, store-detector.js, debug.js)
+- All modules in `src/core/` (resources.js, army.js, buildings.js, techs.js, store-detector.js)
 - All modules in `src/features/` (somuchmore.js, auto-clicker.js, time-to-cap.js, group-units.js, etc.)
 - All UI handlers in `src/features/ui/menu/` (*-ui.js files)
 - Cloud save modules in `src/features/cloud-save/`

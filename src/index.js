@@ -11,7 +11,7 @@ import { initGroupUnits } from './features/group-units';
 import { initGameMechanicsDisplay } from './features/game-mechanics/game-mechanics';
 import { initCloudSave } from './features/cloud-save/cloud-save';
 import { initAutoClicker } from './features/auto-clicker';
-import { Debug, initGameData } from './core/game-data';
+import { initGameData } from './core/game-data';
 
 (function() {
     'use strict';
@@ -22,9 +22,6 @@ import { Debug, initGameData } from './core/game-data';
     Somuchmore.init().then(success => {
         if (success) {
             console.log('[Somuchmore] Ready! Use window.Somuchmore');
-
-            // Expose debug helper under Somuchmore
-            realWindow.Somuchmore.debug = Debug;
 
             // Initialize features
             setTimeout(async () => {

@@ -5,7 +5,6 @@ export { Resources } from './resources';
 export { Army } from './army';
 export { Buildings } from './buildings';
 export { Techs } from './techs';
-export { Debug } from './debug';
 
 // Import for initGameData
 import { Army } from './army';
