@@ -1,15 +1,18 @@
 // Cloud Save UI Handler
+/* global unsafeWindow */
 
 import { Dialog } from '../dialog';
 import { createSaveItemInfo } from './templates';
 
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+
 export function applySetting(enabled) {
     console.log('[Somuchmore] Cloud save auto-save:', enabled);
-    if (window.Somuchmore?.cloudSave) {
+    if (realWindow.Somuchmore?.cloudSave) {
         if (enabled) {
-            window.Somuchmore.cloudSave.startAutoSave(30);
+            realWindow.Somuchmore.cloudSave.startAutoSave(30);
         } else {
-            window.Somuchmore.cloudSave.stopAutoSave();
+            realWindow.Somuchmore.cloudSave.stopAutoSave();
         }
     }
 }
@@ -35,7 +38,7 @@ export function showMessage(text, type = 'info') {
 }
 
 export function updateUI() {
-    const cloudSave = window.Somuchmore?.cloudSave;
+    const cloudSave = realWindow.Somuchmore?.cloudSave;
     if (!cloudSave) return;
 
     const statusEl = document.getElementById('cloud-save-status');
@@ -152,7 +155,7 @@ export function showSavesDialog(saves, cloudSave) {
 }
 
 export function setupHandlers() {
-    const cloudSave = window.Somuchmore?.cloudSave;
+    const cloudSave = realWindow.Somuchmore?.cloudSave;
     if (!cloudSave) {
         console.warn('[Somuchmore] Cloud save not initialized');
         return;
@@ -162,7 +165,7 @@ export function setupHandlers() {
     updateUI();
 
     // Expose update function so cloud-save.js can call it after OAuth completes
-    window.Somuchmore._cloudSaveUpdateUI = updateUI;
+    realWindow.Somuchmore._cloudSaveUpdateUI = updateUI;
 
     // Connect button
     const connectBtn = document.getElementById('cloud-save-connect-btn');

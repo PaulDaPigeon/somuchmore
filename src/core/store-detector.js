@@ -1,4 +1,7 @@
 // Store Detection Module
+/* global unsafeWindow */
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 // Wait for React to load and MainStore to be available
 export function waitForGame() {
@@ -26,9 +29,9 @@ export function getMainStore() {
     console.log('[Somuchmore] Attempting to find MainStore...');
 
     // Method 0: Check if it's already exposed globally
-    if (window.Somuchmore?.MainStore) {
-        console.log('[Somuchmore] Found MainStore as window.Somuchmore.MainStore');
-        return window.Somuchmore.MainStore;
+    if (realWindow.Somuchmore?.MainStore) {
+        console.log('[Somuchmore] Found MainStore as realWindow.Somuchmore.MainStore');
+        return realWindow.Somuchmore.MainStore;
     }
 
     // Method 1: Look for React fiber tree (React 18+)

@@ -1,15 +1,18 @@
 // Game Mechanics UI Handler
+/* global unsafeWindow */
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 export function applySetting(enabled) {
     console.log('[Somuchmore] Explain game mechanics:', enabled);
 
     // Apply to grouped view (if active)
-    if (window.Somuchmore?.groupArmy) {
-        window.Somuchmore.groupArmy.applyGameMechanics(enabled);
+    if (realWindow.Somuchmore?.groupArmy) {
+        realWindow.Somuchmore.groupArmy.applyGameMechanics(enabled);
     }
 
     // Apply to standalone display (if active)
-    if (window.Somuchmore?.gameMechanics) {
-        window.Somuchmore.gameMechanics.apply(enabled);
+    if (realWindow.Somuchmore?.gameMechanics) {
+        realWindow.Somuchmore.gameMechanics.apply(enabled);
     }
 }

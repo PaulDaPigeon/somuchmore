@@ -1,5 +1,8 @@
 // Somuchmore - Main Helper Module
+/* global unsafeWindow */
 import { waitForGame, getMainStore } from '../core/store-detector';
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 export const Somuchmore = {
     store: null,
@@ -12,13 +15,13 @@ export const Somuchmore = {
         if (!this.store) {
             console.error('[Somuchmore] Could not find MainStore automatically!');
             console.log('[Somuchmore] Try the manual store finder script');
-            window.Somuchmore = this;
+            realWindow.Somuchmore = this;
             return false;
         }
 
         console.log('[Somuchmore] MainStore found!', this.store);
-        window.Somuchmore = this;
-        window.Somuchmore.MainStore = this.store;
+        realWindow.Somuchmore = this;
+        realWindow.Somuchmore.MainStore = this.store;
 
         this.logInfo();
         return true;
@@ -32,7 +35,7 @@ export const Somuchmore = {
         }
 
         this.store = store;
-        window.Somuchmore.MainStore = store;
+        realWindow.Somuchmore.MainStore = store;
         console.log('[Somuchmore] Store manually set!');
         this.logInfo();
         return true;

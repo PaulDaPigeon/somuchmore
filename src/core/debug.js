@@ -1,11 +1,14 @@
 // Debug helpers
+/* global unsafeWindow */
 import { Army } from './army';
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 /**
  * Get MainStore safely
  */
 function getStore() {
-    return window.Somuchmore?.MainStore;
+    return realWindow.Somuchmore?.MainStore;
 }
 
 export const Debug = {
@@ -117,14 +120,14 @@ export const Debug = {
         Array.prototype.findIndex = hookFunction;
 
         // Store cleanup function under Somuchmore
-        window.Somuchmore = window.Somuchmore || {};
-        window.Somuchmore._cleanupHook = () => {
+        realWindow.Somuchmore = realWindow.Somuchmore || {};
+        realWindow.Somuchmore._cleanupHook = () => {
             Array.prototype.findIndex = originalFindIndex;
             console.log('[GameData] Hook manually removed');
         };
 
         console.log('[GameData] Hook active! Now trigger a fight/scout/spy action.');
-        console.log('[GameData] Run window.Somuchmore._cleanupHook() to remove hook manually');
+        console.log('[GameData] Run realWindow.Somuchmore._cleanupHook() to remove hook manually');
 
         return 'Hook active - trigger an action';
     }

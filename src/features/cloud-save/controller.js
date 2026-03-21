@@ -1,8 +1,11 @@
 // CloudSave Controller - Main business logic
+/* global unsafeWindow */
 
 import { Dialog } from '../ui/dialog';
 import { OAuth2PKCE } from './oauth';
 import { SheetsAPI } from './sheets-api';
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 export class CloudSave {
     constructor() {
@@ -34,19 +37,19 @@ export class CloudSave {
     }
 
     serializeGameState() {
-        if (!window.Somuchmore?.MainStore) {
+        if (!realWindow.Somuchmore?.MainStore) {
             throw new Error('MainStore not available');
         }
 
         // Get somuchmore settings
-        const settings = window.Somuchmore?.settings?.get() || {};
+        const settings = realWindow.Somuchmore?.settings?.get() || {};
 
         // Serialize MainStore data
         const gameData = {
-            resources: window.Somuchmore?.MainStore.resources,
-            buildings: window.Somuchmore?.MainStore.buildings,
-            technologies: window.Somuchmore?.MainStore.technologies,
-            army: window.Somuchmore?.MainStore.army,
+            resources: realWindow.Somuchmore?.MainStore.resources,
+            buildings: realWindow.Somuchmore?.MainStore.buildings,
+            technologies: realWindow.Somuchmore?.MainStore.technologies,
+            army: realWindow.Somuchmore?.MainStore.army,
         };
 
         return {
@@ -107,8 +110,8 @@ export class CloudSave {
             }
 
             // Restore MainStore data
-            if (window.Somuchmore?.MainStore && saveData.data) {
-                Object.assign(window.Somuchmore?.MainStore, saveData.data);
+            if (realWindow.Somuchmore?.MainStore && saveData.data) {
+                Object.assign(realWindow.Somuchmore?.MainStore, saveData.data);
             }
 
             // Restore settings

@@ -1,12 +1,15 @@
 // Group Army Units by Class
+/* global unsafeWindow */
 import { getTabMonitor } from '../core/tab-monitor';
 import { Army } from '../core/game-data';
 import { getSectionIcon } from './game-mechanics/icons';
 import { createAdvantageDiagram, createSpecialAbilities } from './game-mechanics/game-mechanics';
 import { createExplorationTooltipHTML, createIconHTML } from './ui/menu/group-units-templates';
 
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+
 export function initGroupUnits() {
-    if (!window.Somuchmore?.MainStore) {
+    if (!realWindow.Somuchmore?.MainStore) {
         console.error('[Somuchmore] MainStore not available');
         return false;
     }
@@ -251,7 +254,7 @@ export function initGroupUnits() {
         selectorGrid.appendChild(selectorWrapper);
 
         // Load settings to check if game mechanics should be shown
-        const settings = window.Somuchmore?.settings?.get() || { explainGameMechanics: true };
+        const settings = realWindow.Somuchmore?.settings?.get() || { explainGameMechanics: true };
 
         selectorContent.appendChild(selectorGrid);
 
@@ -302,7 +305,7 @@ export function initGroupUnits() {
 
     // Handle tab changes
     function handleTabChange({ mainTab, subTab, container }) {
-        const settings = window.Somuchmore?.settings?.get() || {};
+        const settings = realWindow.Somuchmore?.settings?.get() || {};
 
         // Check if we're on Army tab
         if (mainTab === 'army' && subTab === 'army') {
@@ -344,8 +347,8 @@ export function initGroupUnits() {
             }
 
             // Notify game-mechanics to remove standalone box since we show it in grouped view
-            if (window.Somuchmore?.gameMechanics?.refresh) {
-                window.Somuchmore.gameMechanics.refresh();
+            if (realWindow.Somuchmore?.gameMechanics?.refresh) {
+                realWindow.Somuchmore.gameMechanics.refresh();
             }
         } else {
             // Disable grouping - restore original layout
@@ -354,8 +357,8 @@ export function initGroupUnits() {
             }
 
             // Notify game-mechanics to add standalone box back if enabled
-            if (window.Somuchmore?.gameMechanics?.refresh) {
-                window.Somuchmore.gameMechanics.refresh();
+            if (realWindow.Somuchmore?.gameMechanics?.refresh) {
+                realWindow.Somuchmore.gameMechanics.refresh();
             }
         }
     }
@@ -379,8 +382,8 @@ export function initGroupUnits() {
     }
 
     // Expose API under Somuchmore
-    window.Somuchmore = window.Somuchmore || {};
-    window.Somuchmore.groupArmy = {
+    realWindow.Somuchmore = realWindow.Somuchmore || {};
+    realWindow.Somuchmore.groupArmy = {
         apply: applySetting,
         isGrouped: () => isGrouped,
         applyGameMechanics: applyGameMechanics

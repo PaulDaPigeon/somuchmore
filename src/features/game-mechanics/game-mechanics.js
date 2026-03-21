@@ -1,4 +1,5 @@
 // Game Mechanics Display Feature - Shows game mechanics independently
+/* global unsafeWindow */
 
 import { getTabMonitor } from '../../core/tab-monitor';
 import {
@@ -7,6 +8,8 @@ import {
     createAdvantageDiagramTooltipHTML
 } from './templates';
 import { getSectionIcon } from './icons';
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 // Export icon function for use by group-units
 export { getSectionIcon };
@@ -54,7 +57,7 @@ export function createAdvantageDiagram() {
 }
 
 export function initGameMechanicsDisplay() {
-    if (!window.Somuchmore?.MainStore) {
+    if (!realWindow.Somuchmore?.MainStore) {
         console.error('[Somuchmore] MainStore not available');
         return false;
     }
@@ -66,7 +69,7 @@ export function initGameMechanicsDisplay() {
 
     // Create game mechanics box
     function createGameMechanicsBox() {
-        const settings = window.Somuchmore?.settings?.get() || { explainGameMechanics: true };
+        const settings = realWindow.Somuchmore?.settings?.get() || { explainGameMechanics: true };
 
         const box = document.createElement('div');
         box.className = 'flex flex-wrap w-full min-w-full mb-3 p-3 shadow rounded-lg ring-1 bg-gray-100 dark:bg-mydark-600 ring-gray-300 dark:ring-mydark-200';
@@ -104,7 +107,7 @@ export function initGameMechanicsDisplay() {
         if (!container) return false;
 
         // Don't add if grouping is active (it handles its own game mechanics)
-        const settings = window.Somuchmore?.settings?.get() || {};
+        const settings = realWindow.Somuchmore?.settings?.get() || {};
         if (settings.groupUnitsByClass) {
             return false;
         }
@@ -137,7 +140,7 @@ export function initGameMechanicsDisplay() {
 
     // Handle tab changes
     function handleTabChange({ mainTab, subTab }) {
-        const settings = window.Somuchmore?.settings?.get() || {};
+        const settings = realWindow.Somuchmore?.settings?.get() || {};
 
         if (mainTab === 'army' && subTab === 'army') {
             // On army tab - show game mechanics if enabled and not grouped
@@ -156,7 +159,7 @@ export function initGameMechanicsDisplay() {
             return;
         }
 
-        const settings = window.Somuchmore?.settings?.get() || {};
+        const settings = realWindow.Somuchmore?.settings?.get() || {};
 
         // Only handle if grouping is disabled (otherwise group-units handles it)
         if (!settings.groupUnitsByClass) {
@@ -175,7 +178,7 @@ export function initGameMechanicsDisplay() {
             return;
         }
 
-        const settings = window.Somuchmore?.settings?.get() || {};
+        const settings = realWindow.Somuchmore?.settings?.get() || {};
 
         // Only show standalone box if:
         // 1. Game mechanics is enabled
@@ -191,8 +194,8 @@ export function initGameMechanicsDisplay() {
     tabMonitor.onChange(handleTabChange);
 
     // Expose API under Somuchmore
-    window.Somuchmore = window.Somuchmore || {};
-    window.Somuchmore.gameMechanics = {
+    realWindow.Somuchmore = realWindow.Somuchmore || {};
+    realWindow.Somuchmore.gameMechanics = {
         apply: applyGameMechanicsSetting,
         refresh: refresh  // Called by group-units when grouping state changes
     };

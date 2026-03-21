@@ -1,5 +1,8 @@
 // UI Menu HTML Templates
 
+import handPointerIconSVG from '../../../assets/icons/hand-pointer.svg';
+import { Resources } from '../../../core/game-data';
+
 export function createCloseButton() {
     return `
         <button type="button" class="somuchmore_close-btn text-gray-400 hover:text-gray-500">
@@ -11,8 +14,39 @@ export function createCloseButton() {
     `;
 }
 
+// Create auto-clicker section (only if manual clicking buttons are available)
+function createAutoClickerSection(settings) {
+    if (!Resources.isManualClickingAvailable()) {
+        return ''; // Don't show auto-clicker option if buttons aren't present
+    }
+
+    return `
+        <div class="bg-white dark:bg-mydark-500 rounded-xl p-5 shadow-lg border border-gray-200 dark:border-mydark-300">
+            <h4 class="font-game mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                <span class="icon mr-2 w-5 h-5" style="color: deeppink; display: inline-flex;">${handPointerIconSVG}</span>
+                Auto-Clicker (Early Game)
+            </h4>
+            <div class="space-y-1">
+                <div class="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-mydark-600 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Enable auto-clicker</span>
+                    <button class="somuchmore_toggle ${settings.autoClickerEnabled ? '' : 'bg-gray-200 dark:bg-gray-700'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none" style="background-color: ${settings.autoClickerEnabled ? 'deeppink' : ''}" role="switch" type="button" tabindex="0" aria-checked="${settings.autoClickerEnabled}" data-setting="autoClickerEnabled">
+                        <span class="${settings.autoClickerEnabled ? 'translate-x-5' : 'translate-x-0'} pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                    </button>
+                </div>
+                <div class="pl-4 space-y-1" id="autoclicker-options" style="display: ${settings.autoClickerEnabled ? 'block' : 'none'}">
+                    <div class="py-2 px-3 bg-gray-50 dark:bg-mydark-600 rounded-lg">
+                        <label class="text-sm text-gray-600 dark:text-gray-400 block mb-1">Click interval (ms)</label>
+                        <input type="number" class="w-full px-2 py-1 text-sm bg-white dark:bg-mydark-700 border border-gray-300 dark:border-mydark-400 rounded text-gray-800 dark:text-gray-200" id="autoclicker-interval" value="${settings.autoClickerInterval || 100}" min="50" max="5000" step="50">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 export function createContentArea(settings, cloudIconSVG) {
     return `
+        ${createAutoClickerSection(settings)}
         <div class="bg-white dark:bg-mydark-500 rounded-xl p-5 shadow-lg border border-gray-200 dark:border-mydark-300">
             <h4 class="font-game mb-4 text-gray-800 dark:text-gray-200 flex items-center">
                 <svg viewBox="0 0 24 24" role="presentation" class="icon mr-2 w-5 h-5" style="color: deeppink;">

@@ -1,10 +1,13 @@
 // Tech helpers
+/* global unsafeWindow */
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 /**
  * Get MainStore safely
  */
 function getStore() {
-    return window.Somuchmore?.MainStore;
+    return realWindow.Somuchmore?.MainStore;
 }
 
 export const Techs = {

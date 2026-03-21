@@ -1,16 +1,19 @@
 // Cloud Save - Initialization
+/* global unsafeWindow */
 
 import { Dialog } from '../ui/dialog';
 import { CloudSave } from './controller';
 import { decodeSecret } from './secret-decoder';
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 // Initialize and export
 export async function initCloudSave() {
     const cloudSave = new CloudSave();
 
     // Expose to window for UI access under Somuchmore
-    window.Somuchmore = window.Somuchmore || {};
-    window.Somuchmore.cloudSave = cloudSave;
+    realWindow.Somuchmore = realWindow.Somuchmore || {};
+    realWindow.Somuchmore.cloudSave = cloudSave;
 
     // Pre-decode the secret for OAuth operations
     await decodeSecret();
@@ -38,8 +41,8 @@ export async function initCloudSave() {
                     window.history.replaceState({}, document.title, cleanUrl);
 
                     // Update UI
-                    if (window.Somuchmore?._cloudSaveUpdateUI) {
-                        window.Somuchmore._cloudSaveUpdateUI();
+                    if (realWindow.Somuchmore?._cloudSaveUpdateUI) {
+                        realWindow.Somuchmore._cloudSaveUpdateUI();
                     }
 
                     // Show success message

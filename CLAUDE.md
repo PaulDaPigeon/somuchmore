@@ -35,7 +35,7 @@ The initialization sequence in `src/index.js`:
 Somuchmore.init() → initGameData() → [features initialize]
 ```
 
-**Critical**: All features must wait for `window.Somuchmore.MainStore` to be available before operating. Features use retry loops with MutationObserver to handle delayed DOM rendering.
+**Critical**: All features must wait for `realWindow.Somuchmore.MainStore` to be available before operating. Features use retry loops with MutationObserver to handle delayed DOM rendering. Note: `realWindow` refers to `unsafeWindow` (the page's actual window) - see "Tampermonkey Scope Isolation" section below.
 
 ### 2. Game Data Abstraction Layer
 
@@ -49,7 +49,7 @@ The game data abstraction is split into focused modules under `src/core/`:
 - **`game-data.js`**: Re-exports all modules for convenient importing
 
 **Important patterns**:
-- Each module uses `window.Somuchmore.MainStore` via a private `getStore()` function
+- Each module uses `realWindow.Somuchmore.MainStore` via a private `getStore()` function (with unsafeWindow pattern)
 - Unit definitions (category, cap) are scraped from the game's bundled JavaScript on init
 - Unit translations (display name → ID) are also scraped to handle dynamic content
 - The abstraction layer allows features to survive game updates that change MainStore internals
@@ -60,9 +60,13 @@ The game data abstraction is split into focused modules under `src/core/`:
 Each feature follows this pattern:
 
 ```javascript
+// CRITICAL: Use unsafeWindow to access page window (see "Tampermonkey Scope Isolation" section)
+/* global unsafeWindow */
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+
 export function initFeature() {
     // 1. Check MainStore availability
-    if (!window.Somuchmore?.MainStore) return false;
+    if (!realWindow.Somuchmore?.MainStore) return false;
 
     // 2. Load/define settings
     const settings = loadSettings();
@@ -83,9 +87,9 @@ export function initFeature() {
     // 5. MutationObserver to reapply on DOM changes
     const observer = new MutationObserver(...)
 
-    // 6. Expose API under window.Somuchmore
-    window.Somuchmore = window.Somuchmore || {};
-    window.Somuchmore.featureName = {
+    // 6. Expose API under realWindow.Somuchmore (page's window.Somuchmore)
+    realWindow.Somuchmore = realWindow.Somuchmore || {};
+    realWindow.Somuchmore.featureName = {
         apply: (settings) => {...}
     };
 
@@ -94,11 +98,12 @@ export function initFeature() {
 ```
 
 **Key conventions**:
+- **ALWAYS use `realWindow` instead of `window`** (see "Tampermonkey Scope Isolation" section below)
 - Features retry setup up to 15 times (game tabs load asynchronously)
 - MutationObserver watches for DOM changes (React re-renders destroy injected elements)
 - Settings are stored in `localStorage` under `somuchmore_settings`
-- **All APIs must be exposed under `window.Somuchmore.*` to keep global namespace clean**
-- Use `window.Somuchmore._privateMethod` for internal callbacks (prefix with underscore)
+- **All APIs must be exposed under `realWindow.Somuchmore.*` to keep global namespace clean**
+- Use `realWindow.Somuchmore._privateMethod` for internal callbacks (prefix with underscore)
 
 ### 4. Settings System
 
@@ -120,9 +125,9 @@ Settings flow:
 To add a new setting:
 1. Add default value in `ui-menu.js` `loadSettings()`
 2. Add UI control to `templates.js` `createContentArea()`
-3. Create new `*-ui.js` module with `applySetting(enabled)` export
+3. Create new `*-ui.js` module with `applySetting(enabled)` export (using `realWindow` pattern)
 4. Import and call in `ui-menu.js` toggle handler
-5. Feature exposes API under `window.Somuchmore.featureName`
+5. Feature exposes API under `realWindow.Somuchmore.featureName`
 
 ### 5. DOM Integration Patterns
 
@@ -251,10 +256,12 @@ src/
 The `UserscriptHeaderPlugin` in `webpack.config.js`:
 - Injects `// ==UserScript==` metadata before bundled code
 - Reads version from `package.json`
-- Adds `@grant GM_*` directives for Tampermonkey APIs
+- Adds `@grant GM_setValue`, `@grant GM_getValue`, `@grant GM_deleteValue` directives (required for cloud save)
 - Sets `@run-at document-idle` to wait for game load
 
 Output is a single `.user.js` file that Tampermonkey can install directly.
+
+**IMPORTANT**: The `@grant` directives trigger Tampermonkey's scope isolation, which is why all modules must use the `unsafeWindow` pattern (see "Tampermonkey Scope Isolation" section). Do NOT remove these directives as they are required for cloud save functionality.
 
 ## Global Namespace Organization
 
@@ -283,12 +290,65 @@ window.Somuchmore = {
 - Private/internal APIs should be prefixed with underscore: `window.Somuchmore._privateMethod`
 - Always use `window.Somuchmore.MainStore` (never `window.MainStore`)
 
+### Tampermonkey Scope Isolation and unsafeWindow
+
+**CRITICAL**: Tampermonkey creates an isolated scope when ANY `@grant` directive is used. This means `window` in the userscript refers to an isolated window object, NOT the page's actual window.
+
+**The Problem:**
+- We use `@grant GM_setValue`, `@grant GM_getValue`, `@grant GM_deleteValue` (required for cloud save)
+- These grants trigger Tampermonkey's scope isolation
+- Code like `window.Somuchmore = {...}` sets properties on the ISOLATED window, not the page window
+- Browser console runs in page context and cannot see isolated window properties
+- Result: `window.Somuchmore` appears undefined in console even though it's set
+
+**The Solution - Use `unsafeWindow` in Every Module:**
+
+Tampermonkey provides `unsafeWindow` which references the page's actual window object. Every module must use this pattern:
+
+```javascript
+// At the top of EVERY module (core, features, ui handlers, etc.)
+/* global unsafeWindow */
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+
+// Then use realWindow instead of window throughout:
+function getStore() {
+    return realWindow.Somuchmore?.MainStore;
+}
+
+// When exposing APIs:
+realWindow.Somuchmore = realWindow.Somuchmore || {};
+realWindow.Somuchmore.featureName = { ... };
+```
+
+**Why this pattern:**
+- `unsafeWindow` is globally available when ANY `@grant` is used (we don't need `@grant unsafeWindow`)
+- Each module accesses it directly (no shared state or import needed)
+- `/* global unsafeWindow */` comment tells linters it's a legitimate global
+- Fallback to `window` for testing outside Tampermonkey
+- APIs exposed on `realWindow.Somuchmore` = `unsafeWindow.Somuchmore` = page's `window.Somuchmore`
+- Browser console can access `window.Somuchmore` successfully
+
+**DO NOT:**
+- ❌ Use `globalThis.realWindow` (ES6 import hoisting prevents early initialization)
+- ❌ Try to set `globalThis.window = unsafeWindow` (proxy traps prevent this)
+- ❌ Use `window.Somuchmore` directly (only works without @grant directives)
+- ❌ Remove `@grant` directives (cloud save needs GM_* APIs)
+
+**Files that must use this pattern:** ALL files that reference `window.Somuchmore` - this includes:
+- `src/index.js`
+- All modules in `src/core/` (resources.js, army.js, buildings.js, techs.js, store-detector.js, debug.js)
+- All modules in `src/features/` (somuchmore.js, auto-clicker.js, time-to-cap.js, group-units.js, etc.)
+- All UI handlers in `src/features/ui/menu/` (*-ui.js files)
+- Cloud save modules in `src/features/cloud-save/`
+
 ## Testing in Development
 
 1. Run `npm run dev` (watch mode)
 2. Install `dist/somuchmore.user.js` in Tampermonkey
 3. Changes auto-rebuild, **manually reload the game page** to test
 4. Use browser console to inspect `window.Somuchmore` and its properties
+   - Note: `window.Somuchmore` works in console because features use `realWindow` (unsafeWindow) internally
+   - If `window.Somuchmore` is undefined, check that all modules use the unsafeWindow pattern correctly
 
 ## Planned Features
 

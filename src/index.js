@@ -5,6 +5,7 @@ import { initUIMenu } from './features/ui/menu/ui-menu';
 import { initGroupUnits } from './features/group-units';
 import { initGameMechanicsDisplay } from './features/game-mechanics/game-mechanics';
 import { initCloudSave } from './features/cloud-save/cloud-save';
+import { initAutoClicker } from './features/auto-clicker';
 import { Debug, initGameData } from './core/game-data';
 
 (function() {
@@ -28,6 +29,7 @@ import { Debug, initGameData } from './core/game-data';
 
                     // Initialize features
                     initTimeToCap();
+                    initAutoClicker();
                     await initCloudSave();
                     initUIMenu();
                     initGroupUnits();

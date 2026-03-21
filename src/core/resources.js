@@ -1,10 +1,13 @@
 // Resource helpers
+/* global unsafeWindow */
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 /**
  * Get MainStore safely
  */
 function getStore() {
-    return window.Somuchmore?.MainStore;
+    return realWindow.Somuchmore?.MainStore;
 }
 
 export const Resources = {
@@ -40,5 +43,13 @@ export const Resources = {
         const resource = this.get(resourceId);
         if (!resource) return 0;
         return store?.ResourcesStore?.getTimerValue?.(resource) || 0;
+    },
+
+    // Check if manual clicking buttons are available (early game)
+    // manual === 1 means buttons are present, manual === 2 means they're not
+    isManualClickingAvailable() {
+        const foodResource = this.get('food');
+        if (!foodResource) return false;
+        return foodResource.manual === 1;
     }
 };

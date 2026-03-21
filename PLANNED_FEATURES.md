@@ -1,21 +1,5 @@
 # Planned Features
 
-## Early Game Automation
-
-### Auto-Clicker for First Age Resources
-- [ ] Auto-click resource generation buttons in first age
-  - Food button auto-clicker
-  - Wood button auto-clicker
-  - Stone button auto-clicker
-- [ ] Configurable options:
-  - Enable/disable per resource type
-  - Click interval/delay customization
-  - Stop when resources reach cap
-  - Disable once automatic production starts
-- [ ] Smart detection:
-  - Only activate when manual buttons are present
-  - Auto-disable when buttons disappear (age progression)
-
 ## Build Tab Enhancements
 
 ### Resource Progress Indicators
@@ -104,20 +88,19 @@
 ## Priority Order
 
 **Phase 1 (High Priority):**
-1. **Auto-Clicker for First Age Resources** - Simple, high impact for early game
-2. Resource progress indicators on Build tab
-3. Enemy numbers display on Attack tab
-4. Discovery indicator on Explore tab
+1. Resource progress indicators on Build tab
+2. Enemy numbers display on Attack tab
+3. Discovery indicator on Explore tab
 
 **Phase 2 (Medium Priority):**
-5. Battle prediction/oracle feature
-6. Diplomacy relationship calculator
-7. Auto-buy buildings system
+4. Battle prediction/oracle feature
+5. Diplomacy relationship calculator
+6. Auto-buy buildings system
 
 **Phase 3 (Lower Priority):**
-8. Auto-buy research system
-9. Wiki feature (large undertaking)
-10. Advanced customization options
+7. Auto-buy research system
+8. Wiki feature (large undertaking)
+9. Advanced customization options
 
 ## Technical Considerations
 

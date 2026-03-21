@@ -1,4 +1,5 @@
 // Somuchmore UI Menu
+/* global unsafeWindow */
 
 import fireIconSVG from '../../../assets/icons/fire.svg';
 import cloudIconSVG from '../../../assets/icons/cloud.svg';
@@ -7,9 +8,12 @@ import * as TimeToCapUI from './time-to-cap-ui';
 import * as GroupUnitsUI from './group-units-ui';
 import * as GameMechanicsUI from './game-mechanics-ui';
 import * as CloudSaveUI from './cloud-save-ui';
+import * as AutoClickerUI from './auto-clicker-ui';
+
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 export function initUIMenu() {
-    if (!window.Somuchmore?.MainStore) {
+    if (!realWindow.Somuchmore?.MainStore) {
         console.error('[Somuchmore] MainStore not available');
         return false;
     }
@@ -24,7 +28,9 @@ export function initUIMenu() {
             timeToCapEnabled: true, // Default: enabled
             groupUnitsByClass: true, // Default: enabled
             explainGameMechanics: true, // Default: enabled
-            cloudSaveAutoSave: false // Default: disabled
+            cloudSaveAutoSave: false, // Default: disabled
+            autoClickerEnabled: false, // Default: disabled
+            autoClickerInterval: 100 // Default: 100ms
         };
     };
 
@@ -42,7 +48,7 @@ export function initUIMenu() {
             return false;
         }
 
-        const parentContainer = document.querySelector('header div.w-2\\/3.lg\\:w-1\\/4:nth-last-child(2)');
+        const parentContainer = document.querySelector('header div.w-2\\/3.lg\\:w-1\\/4');
         if (!parentContainer) {
             console.warn('[Somuchmore] Icon container not found, retrying...');
             return false;
@@ -188,9 +194,32 @@ export function initUIMenu() {
                     GameMechanicsUI.applySetting(settings[settingName]);
                 } else if (settingName === 'cloudSaveAutoSave') {
                     CloudSaveUI.applySetting(settings[settingName]);
+                } else if (settingName === 'autoClickerEnabled') {
+                    // Toggle visibility of options
+                    const optionsEl = contentArea.querySelector('#autoclicker-options');
+                    if (optionsEl) {
+                        optionsEl.style.display = settings[settingName] ? 'block' : 'none';
+                    }
+                    AutoClickerUI.applySetting(settings[settingName]);
                 }
             });
         });
+
+        // Setup interval input handler
+        const intervalInput = contentArea.querySelector('#autoclicker-interval');
+        if (intervalInput) {
+            intervalInput.addEventListener('change', () => {
+                const value = parseInt(intervalInput.value);
+                if (value >= 50 && value <= 5000) {
+                    settings.autoClickerInterval = value;
+                    saveSettings(settings);
+                    // Restart auto-clicker with new interval if enabled
+                    if (settings.autoClickerEnabled) {
+                        AutoClickerUI.applySetting(true);
+                    }
+                }
+            });
+        }
 
         // Setup cloud save event listeners
         CloudSaveUI.setupHandlers();
@@ -237,8 +266,8 @@ export function initUIMenu() {
     trySetup();
 
     // Expose settings for other modules under Somuchmore
-    window.Somuchmore = window.Somuchmore || {};
-    window.Somuchmore.settings = {
+    realWindow.Somuchmore = realWindow.Somuchmore || {};
+    realWindow.Somuchmore.settings = {
         get: () => settings,
         isTimeToCapEnabled: () => settings.timeToCapEnabled,
         isGroupUnitsByClass: () => settings.groupUnitsByClass

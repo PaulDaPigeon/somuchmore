@@ -1,8 +1,11 @@
 // Time to Cap Column Feature
+/* global unsafeWindow */
 import { Resources } from '../core/game-data';
 
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+
 export function initTimeToCap() {
-    if (!window.Somuchmore?.MainStore) {
+    if (!realWindow.Somuchmore?.MainStore) {
         console.error('[Somuchmore] MainStore not available');
         return false;
     }
@@ -294,8 +297,8 @@ export function initTimeToCap() {
     });
 
     // Expose API under Somuchmore
-    window.Somuchmore = window.Somuchmore || {};
-    window.Somuchmore.timeToCap = {
+    realWindow.Somuchmore = realWindow.Somuchmore || {};
+    realWindow.Somuchmore.timeToCap = {
         apply: (enabled) => {
             const cells = document.querySelectorAll('.somuchmore_ttc');
             cells.forEach(cell => {

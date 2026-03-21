@@ -15,7 +15,7 @@
     "game",
     "automation"
   ],
-  "author": "You",
+  "author": "PaulDaPigeon",
   "license": "MIT",
   "devDependencies": {
     "raw-loader": "^4.0.2",
