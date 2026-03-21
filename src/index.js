@@ -1,4 +1,9 @@
 // Somuchmore - Userscript for Theresmore game - Main Entry Point
+
+// Use page's window instead of Tampermonkey's isolated window
+/* global unsafeWindow */
+const realWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+
 import { Somuchmore } from './features/somuchmore';
 import { initTimeToCap } from './features/time-to-cap';
 import { initUIMenu } from './features/ui/menu/ui-menu';
@@ -19,11 +24,11 @@ import { Debug, initGameData } from './core/game-data';
             console.log('[Somuchmore] Ready! Use window.Somuchmore');
 
             // Expose debug helper under Somuchmore
-            window.Somuchmore.debug = Debug;
+            realWindow.Somuchmore.debug = Debug;
 
             // Initialize features
             setTimeout(async () => {
-                if (window.Somuchmore?.MainStore) {
+                if (realWindow.Somuchmore?.MainStore) {
                     // Preload game data definitions
                     await initGameData();
 
