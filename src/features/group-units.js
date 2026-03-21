@@ -342,10 +342,20 @@ export function initGroupUnits() {
             if (container) {
                 groupUnits(container);
             }
+
+            // Notify game-mechanics to remove standalone box since we show it in grouped view
+            if (window.Somuchmore?.gameMechanics?.refresh) {
+                window.Somuchmore.gameMechanics.refresh();
+            }
         } else {
             // Disable grouping - restore original layout
             if (isGrouped) {
                 restoreOriginal();
+            }
+
+            // Notify game-mechanics to add standalone box back if enabled
+            if (window.Somuchmore?.gameMechanics?.refresh) {
+                window.Somuchmore.gameMechanics.refresh();
             }
         }
     }

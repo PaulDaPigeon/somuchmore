@@ -168,13 +168,33 @@ export function initGameMechanicsDisplay() {
         }
     }
 
+    // Refresh standalone box based on current settings
+    // Called when grouping state changes to coordinate display
+    function refresh() {
+        if (!tabMonitor.isTabActive('army', 'army')) {
+            return;
+        }
+
+        const settings = window.Somuchmore?.settings?.get() || {};
+
+        // Only show standalone box if:
+        // 1. Game mechanics is enabled
+        // 2. Grouping is disabled
+        if (settings.explainGameMechanics && !settings.groupUnitsByClass) {
+            addGameMechanicsBox();
+        } else {
+            removeGameMechanicsBox();
+        }
+    }
+
     // Listen for tab changes
     tabMonitor.onChange(handleTabChange);
 
     // Expose API under Somuchmore
     window.Somuchmore = window.Somuchmore || {};
     window.Somuchmore.gameMechanics = {
-        apply: applyGameMechanicsSetting
+        apply: applyGameMechanicsSetting,
+        refresh: refresh  // Called by group-units when grouping state changes
     };
 
     return true;
